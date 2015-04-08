@@ -1,5 +1,4 @@
 PROFILES = {"current": ""}
-TOKENS = dict()
 
 
 class Profile(object):
@@ -7,7 +6,9 @@ class Profile(object):
     def __init__(self, name):
         self.name = name
         self.fields = list()
+
         self.separator = "_"
+        self.tokens = dict()
 
     def add_field(self, name):
         f = Field(name)
@@ -54,7 +55,7 @@ class Field(object):
     def append_token(self, token, default=False):
         self.tokens.append(token)
         if default:
-            self.default = token
+            self.set_default(token)
 
     def set_default(self, value):
         self.has_default = True
@@ -70,29 +71,34 @@ def solve(*arg, **kwds):
 
 
 def list_tokens():
-    return TOKENS.keys()
+    p = current_profile()
+    return p.tokens.keys()
 
 
-def get_token(name):
-    return TOKENS.get(name)
+def get_token(key):
+    p = current_profile()
+    return p.tokens.get(key)
 
 
 def new_token(name, value):
     if not get_token(name):
-        TOKENS[name] = value
+        p = current_profile()
+        p.tokens[name] = value
         return True
     return False
 
 
 def delete_token(name):
     if get_token(name):
-        del TOKENS[name]
+        p = current_profile()
+        del p.tokens[name]
         return True
     return False
 
 
 def clear_tokens():
-    TOKENS.clear()
+    p = current_profile()
+    p.tokens.clear()
 
 
 def list_profiles():

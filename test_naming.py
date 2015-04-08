@@ -9,7 +9,6 @@ class NamingTests(unittest.TestCase):
 
     def tearDown(self):
         n.delete_profile("test")
-        n.clear_tokens()
 
     def test_list_tokens(self):
         n.clear_tokens()
@@ -59,14 +58,16 @@ class NamingTests(unittest.TestCase):
         p = n.current_profile()
         for i in range(3):
             n.clear_tokens()
+
             n.new_token("l", "L")
             n.new_token("r", "R")
             n.new_token("m", "M")
+
             f = p.add_field("side")
             f.append_token("l")
             f.append_token("r")
-            f.append_token("m")
-            f.set_default("m")
+            f.append_token("m", True)
+
             p.add_field("name")
             (
                 lambda: self.assertEqual(n.solve("test"), "M_test"),
