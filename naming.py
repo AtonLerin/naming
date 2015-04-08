@@ -54,7 +54,7 @@ class Profile(object):
                 if a in f.tokens:
                     f.solve(a)
                     arg.remove(a)
-        for k, v in kwds.iteritems():
+        for k, v in kwds.items():
             f = self.get_field(k)
             f.solve(v)
         i = 0
@@ -94,7 +94,7 @@ def solve(*arg, **kwds):
 
 def list_tokens():
     p = current_profile()
-    return p.tokens.keys()
+    return tuple(p.tokens.keys())
 
 
 def get_token(key):

@@ -19,7 +19,7 @@ class NamingTests(unittest.TestCase):
         self.assertTrue(n.new_token("name", "value1"))
         self.assertFalse(n.new_token("name", "value2"))
         self.assertEqual(len(n.list_tokens()), 1)
-        self.assertEqual(n.list_tokens(), ["name"])
+        self.assertEqual(n.list_tokens(), ("name", ))
 
     def test_get_token(self):
         n.clear_tokens()
