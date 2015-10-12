@@ -51,4 +51,4 @@ n.unsolve("ROOT_test_000_M_JNT")["type"]      # "jnt"
 
 # Docs
 
-Check out the documentation at [cesarsaez.me/naming](https://cesarsaez.me/naming)
+Check out the documentation at [cesarsaez.me/naming](http://cesarsaez.me/naming)
