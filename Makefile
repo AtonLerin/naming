@@ -1,14 +1,15 @@
-html: clear
+docs: clear
 	pycco naming.py
 
 clear:
 	rm -rf ./docs/*.*
 
-gh_pages: html
-	git checkout -b gh_pages
+gh_pages: docs
+	git commit -a
+	git checkout gh_pages
 	git merge refactor
 	git push
 	git checkout refactor
 
-httpserver: html
+httpserver: docs
 	python -m SimpleHTTPServer
