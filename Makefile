@@ -6,7 +6,7 @@ clear:
 
 gh_pages: docs
 	git commit -a
-	git checkout gh_pages
+	git checkout gh-pages
 	git merge refactor
 	git push
 	git checkout refactor
