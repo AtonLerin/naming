@@ -4,7 +4,7 @@ docs: clear
 clear:
 	rm -rf ./docs/*.*
 
-gh_pages: docs
+gh-pages: docs
 	git commit -a
 	git checkout gh-pages
 	git merge refactor
