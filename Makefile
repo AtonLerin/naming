@@ -13,3 +13,6 @@ gh-pages: docs
 
 httpserver: docs
 	python -m SimpleHTTPServer
+
+unittest:
+	coverage erase && clear && coverage run --source "${PWD##*/}" -m unittest discover && coverage report -m
