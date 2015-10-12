@@ -1,4 +1,6 @@
-*.py[co]
-.ropeproject
+.ropeproject/
+__pycache__/
+venv3/
 venv/
 .coverage
+*.py[co]
