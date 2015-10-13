@@ -38,11 +38,9 @@ STR_TYPE = 0
 DICT_TYPE = 1
 INT_TYPE = 2
 
-MEMO_DRIVER = 0
-JSON_DRIVER = 1
-
 FIELDS = dict()
 PROFILES = dict()
+DB_DRIVER = None
 ACTIVE_PROFILE = None
 
 
@@ -71,9 +69,11 @@ def set_active_profile(profile_name):
     Set the active profile by name, all names will be solved under the rules set
     on this profile/context.
     """
+    global ACTIVE_PROFILE  # patch ACTIVE_PROFILE, KISS
+
     profile = PROFILES.get(profile_name)
     if profile:
-        global ACTIVE_PROFILE  # patch ACTIVE_PROFILE, KISS
+        logging.debug("Patching active_profile as: {}".format(profile_name))
         ACTIVE_PROFILE = profile_name
         return True
     return False
@@ -87,36 +87,47 @@ def active_profile():
     return None
 
 
-def save(driver=JSON_DRIVER):
+def save(driver=None):
     """
     Save all changes to disk in order to make them session persistent (only json
     is supported at the moment, if there's anyone wanting to add support to DB
     drivers please feels free to get in touch).
     """
-    if driver == JSON_DRIVER:
-        path = _path()
-        if os.path.exists(path):
-            os.mkdir(path)
-
-    if driver == MEMO_DRIVER:  # in memory, used by unit tests
-        pass
+    set_driver(driver)
+    driver().dump(PROFILES=PROFILES, FIELDS=FIELDS,
+                  ACTIVE_PROFILE=ACTIVE_PROFILE)
 
 
-def _path():
+def load(driver=None):
     """
-    Return the path where naming gets serialized (kinda coupled with `save()`
-    and `JSON_DRIVER` at the moment, KISS).
-
-    The mechanism follows the order below:
-
-    1. Look at `NAMING_PATH` environment variable.
-    2. Look at `~/.local/share/naming.py/`
-
-    > `~` is equvalent to `%userprofile%` on Windows... yay! :)
+    Load existing data by using a driver, you should call this function to
+    reload the library or init from latest saved state.
     """
-    home = os.path.expanduser("~")
-    return os.environ.get("NAMING_PATH",
-                          os.path.join(home, ".local", "share", "naming.py"))
+    set_driver(driver)
+    values = driver().load()
+    globals().update(values)
+
+
+def set_driver(driver):
+    """
+    Set the IO driver to driver, if None is passed it uses the existing active
+    driver or init a new one based on json.
+    """
+    global DB_DRIVER  # KISS
+
+    driver = driver or DB_DRIVER
+    if driver is None:
+        logging.debug("Initializing a new JSON driver")
+        DB_DRIVER = JSONDriver()
+
+
+def driver():
+    """
+    Return the active I/O driver. It's important to get access through this
+    function in order to ensure you are getting the singleton and not
+    initializing a new driver on each call.
+    """
+    return DB_DRIVER
 
 
 # == Classes ==
@@ -234,3 +245,76 @@ class Profile(object):
         for name, field in self.fields.iteritems():
             rval.append(name, field.unsolve(*values))
         return rval
+
+# === I/O Drivers ===
+
+# Drivers are in charge of managing I/O.
+
+
+class MemoDriver(object):
+    """
+    In memory driver, this driver does not save to disk so whatever you set is
+    not session persistent (used by unit tests).
+    """
+    def __init__(self):
+        self.value = dict()
+        self.value = self.load()  # update value on init
+
+    def dump(self, **objs):
+        self.value.update(objs)
+
+    def load(self):
+        return self.value
+
+
+class JSONDriver(MemoDriver):
+    """
+    This driver stores to disk by encoding everything as json using python
+    builtin json module.
+    """
+    def dump(self, **objs):
+        """
+        Dump `objs` as JSON on disk.
+        """
+        super(JSONDriver, self).dump(**objs)
+
+        if os.path.exists(self.path):
+            os.mkdir(self.path)
+
+        for k, v in objs.iteritems():
+            with open(os.path.join(self.path, "{}.json".format(k)), "w") as fp:
+                json.dump(v, fp)
+
+    def load(self):
+        """
+        Load and return a data `dict` from disk.
+        """
+        if not os.path.exists(self.path):
+            return
+
+        rval = dict()
+
+        for filename in os.listdir(self.path):
+            filepath = os.path.join(self.path, filename)
+            if not os.path.isfile(filepath) or not filename.endswith(".json"):
+                continue
+
+            with open(filepath) as fp:
+                rval[filename.replace(".json", "")] = json.load(fp)
+
+        return rval
+
+    @property
+    def path():
+        """Return the path where naming gets serialized.
+
+        The mechanism follows the order below:
+
+        1. Look at `NAMING_PATH` environment variable.
+        2. Look at `~/.local/share/naming.py/`
+
+        > `~` is equvalent to `%userprofile%` on Windows... yay! :)
+        """
+        home = os.path.expanduser("~")
+        naming_path = os.path.join(home, ".local", "share", "naming.py")
+        return os.environ.get("NAMING_PATH", naming_path)

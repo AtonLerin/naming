@@ -71,11 +71,9 @@ THE SOFTWARE.</p>
 <span class="n">DICT_TYPE</span> <span class="o">=</span> <span class="mi">1</span>
 <span class="n">INT_TYPE</span> <span class="o">=</span> <span class="mi">2</span>
 
-<span class="n">MEMO_DRIVER</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">JSON_DRIVER</span> <span class="o">=</span> <span class="mi">1</span>
-
 <span class="n">FIELDS</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 <span class="n">PROFILES</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="n">DB_DRIVER</span> <span class="o">=</span> <span class="bp">None</span>
 <span class="n">ACTIVE_PROFILE</span> <span class="o">=</span> <span class="bp">None</span></pre></div>
     </div>
   </div>
@@ -169,9 +167,11 @@ on this profile/context.</p>
       
     </div>
     <div class='code'>
-      <div class="highlight"><pre>    <span class="n">profile</span> <span class="o">=</span> <span class="n">PROFILES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">profile_name</span><span class="p">)</span>
+      <div class="highlight"><pre>    <span class="k">global</span> <span class="n">ACTIVE_PROFILE</span>  <span class="c"># patch ACTIVE_PROFILE, KISS</span>
+
+    <span class="n">profile</span> <span class="o">=</span> <span class="n">PROFILES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">profile_name</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">profile</span><span class="p">:</span>
-        <span class="k">global</span> <span class="n">ACTIVE_PROFILE</span>  <span class="c"># patch ACTIVE_PROFILE, KISS</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Patching active_profile as: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">profile_name</span><span class="p">))</span>
         <span class="n">ACTIVE_PROFILE</span> <span class="o">=</span> <span class="n">profile_name</span>
         <span class="k">return</span> <span class="bp">True</span>
     <span class="k">return</span> <span class="bp">False</span></pre></div>
@@ -215,7 +215,7 @@ is supported at the moment, if there's anyone wanting to add support to DB
 drivers please feels free to get in touch).</p>
     </div>
     <div class='code'>
-      <div class="highlight"><pre><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="n">driver</span><span class="o">=</span><span class="n">JSON_DRIVER</span><span class="p">):</span></pre></div>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="n">driver</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -227,13 +227,9 @@ drivers please feels free to get in touch).</p>
       
     </div>
     <div class='code'>
-      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">driver</span> <span class="o">==</span> <span class="n">JSON_DRIVER</span><span class="p">:</span>
-        <span class="n">path</span> <span class="o">=</span> <span class="n">_path</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">driver</span> <span class="o">==</span> <span class="n">MEMO_DRIVER</span><span class="p">:</span>  <span class="c"># in memory, used by unit tests</span>
-        <span class="k">pass</span></pre></div>
+      <div class="highlight"><pre>    <span class="n">set_driver</span><span class="p">(</span><span class="n">driver</span><span class="p">)</span>
+    <span class="n">driver</span><span class="p">()</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">PROFILES</span><span class="o">=</span><span class="n">PROFILES</span><span class="p">,</span> <span class="n">FIELDS</span><span class="o">=</span><span class="n">FIELDS</span><span class="p">,</span>
+                  <span class="n">ACTIVE_PROFILE</span><span class="o">=</span><span class="n">ACTIVE_PROFILE</span><span class="p">)</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -242,19 +238,11 @@ drivers please feels free to get in touch).</p>
       <div class='octowrap'>
         <a class='octothorpe' href='#section-14'>#</a>
       </div>
-      <p>Return the path where naming gets serialized (kinda coupled with <code>save()</code>
-and <code>JSON_DRIVER</code> at the moment, KISS).</p>
-<p>The mechanism follows the order below:</p>
-<ol>
-<li>Look at <code>NAMING_PATH</code> environment variable.</li>
-<li>Look at <code>~/.local/share/naming.py/</code></li>
-</ol>
-<blockquote>
-<p><code>~</code> is equvalent to <code>%userprofile%</code> on Windows... yay! :)</p>
-</blockquote>
+      <p>Load existing data by using a driver, you should call this function to
+reload the library or init from latest saved state.</p>
     </div>
     <div class='code'>
-      <div class="highlight"><pre><span class="k">def</span> <span class="nf">_path</span><span class="p">():</span></pre></div>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">driver</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -266,9 +254,9 @@ and <code>JSON_DRIVER</code> at the moment, KISS).</p>
       
     </div>
     <div class='code'>
-      <div class="highlight"><pre>    <span class="n">home</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s">&quot;~&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;NAMING_PATH&quot;</span><span class="p">,</span>
-                          <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">home</span><span class="p">,</span> <span class="s">&quot;.local&quot;</span><span class="p">,</span> <span class="s">&quot;share&quot;</span><span class="p">,</span> <span class="s">&quot;naming.py&quot;</span><span class="p">))</span></pre></div>
+      <div class="highlight"><pre>    <span class="n">set_driver</span><span class="p">(</span><span class="n">driver</span><span class="p">)</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">driver</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+    <span class="nb">globals</span><span class="p">()</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">values</span><span class="p">)</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -277,10 +265,11 @@ and <code>JSON_DRIVER</code> at the moment, KISS).</p>
       <div class='octowrap'>
         <a class='octothorpe' href='#section-16'>#</a>
       </div>
-      <h2><span id="classes" href="classes"> Classes </span></h2>
+      <p>Set the IO driver to driver, if None is passed it uses the existing active
+driver or init a new one based on json.</p>
     </div>
     <div class='code'>
-      <div class="highlight"><pre></pre></div>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">set_driver</span><span class="p">(</span><span class="n">driver</span><span class="p">):</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -289,10 +278,15 @@ and <code>JSON_DRIVER</code> at the moment, KISS).</p>
       <div class='octowrap'>
         <a class='octothorpe' href='#section-17'>#</a>
       </div>
-      <p>This object represent one of the fields/tokens composing the name.</p>
+      
     </div>
     <div class='code'>
-      <div class="highlight"><pre><span class="k">class</span> <span class="nc">Field</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span></pre></div>
+      <div class="highlight"><pre>    <span class="k">global</span> <span class="n">DB_DRIVER</span>  <span class="c"># KISS</span>
+
+    <span class="n">driver</span> <span class="o">=</span> <span class="n">driver</span> <span class="ow">or</span> <span class="n">DB_DRIVER</span>
+    <span class="k">if</span> <span class="n">driver</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Initializing a new JSON driver&quot;</span><span class="p">)</span>
+        <span class="n">DB_DRIVER</span> <span class="o">=</span> <span class="n">JSONDriver</span><span class="p">()</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -300,6 +294,56 @@ and <code>JSON_DRIVER</code> at the moment, KISS).</p>
     <div class='docs'>
       <div class='octowrap'>
         <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      <p>Return the active I/O driver. It's important to get access through this
+function in order to ensure you are getting the singleton and not
+initializing a new driver on each call.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">driver</span><span class="p">():</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-19'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-19'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="n">DB_DRIVER</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-20'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-20'>#</a>
+      </div>
+      <h2><span id="classes" href="classes"> Classes </span></h2>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-21'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-21'>#</a>
+      </div>
+      <p>This object represent one of the fields/tokens composing the name.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">Field</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-22'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-22'>#</a>
       </div>
       <p>A name is generally composed by multiple fields, so in order to
 solve/unsolve the final name the library go through each field looking at
@@ -318,10 +362,10 @@ implicitly.</p>
     </div>
   </div>
   <div class='clearall'></div>
-  <div class='section' id='section-19'>
+  <div class='section' id='section-23'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-19'>#</a>
+        <a class='octothorpe' href='#section-23'>#</a>
       </div>
       
     </div>
@@ -340,10 +384,10 @@ implicitly.</p>
     </div>
   </div>
   <div class='clearall'></div>
-  <div class='section' id='section-20'>
+  <div class='section' id='section-24'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-20'>#</a>
+        <a class='octothorpe' href='#section-24'>#</a>
       </div>
       
     </div>
@@ -354,10 +398,10 @@ implicitly.</p>
     </div>
   </div>
   <div class='clearall'></div>
-  <div class='section' id='section-21'>
+  <div class='section' id='section-25'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-21'>#</a>
+        <a class='octothorpe' href='#section-25'>#</a>
       </div>
       
     </div>
@@ -368,10 +412,10 @@ implicitly.</p>
     </div>
   </div>
   <div class='clearall'></div>
-  <div class='section' id='section-22'>
+  <div class='section' id='section-26'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-22'>#</a>
+        <a class='octothorpe' href='#section-26'>#</a>
       </div>
       
     </div>
@@ -383,10 +427,10 @@ implicitly.</p>
     </div>
   </div>
   <div class='clearall'></div>
-  <div class='section' id='section-23'>
+  <div class='section' id='section-27'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-23'>#</a>
+        <a class='octothorpe' href='#section-27'>#</a>
       </div>
       <p>Solve the field by returning a <code>set</code> of possible answers.</p>
     </div>
@@ -395,10 +439,10 @@ implicitly.</p>
     </div>
   </div>
   <div class='clearall'></div>
-  <div class='section' id='section-24'>
+  <div class='section' id='section-28'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-24'>#</a>
+        <a class='octothorpe' href='#section-28'>#</a>
       </div>
       
     </div>
@@ -427,10 +471,10 @@ implicitly.</p>
     </div>
   </div>
   <div class='clearall'></div>
-  <div class='section' id='section-25'>
+  <div class='section' id='section-29'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-25'>#</a>
+        <a class='octothorpe' href='#section-29'>#</a>
       </div>
       <p>Decode a name returning the corresponding mapping.</p>
     </div>
@@ -439,10 +483,10 @@ implicitly.</p>
     </div>
   </div>
   <div class='clearall'></div>
-  <div class='section' id='section-26'>
+  <div class='section' id='section-30'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-26'>#</a>
+        <a class='octothorpe' href='#section-30'>#</a>
       </div>
       
     </div>
@@ -451,10 +495,10 @@ implicitly.</p>
     </div>
   </div>
   <div class='clearall'></div>
-  <div class='section' id='section-27'>
+  <div class='section' id='section-31'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-27'>#</a>
+        <a class='octothorpe' href='#section-31'>#</a>
       </div>
       <p>This object represents a name Profile.</p>
     </div>
@@ -463,10 +507,10 @@ implicitly.</p>
     </div>
   </div>
   <div class='clearall'></div>
-  <div class='section' id='section-28'>
+  <div class='section' id='section-32'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-28'>#</a>
+        <a class='octothorpe' href='#section-32'>#</a>
       </div>
       <p>A Profile groups a set of fields (each one with their own rules) allowing to
 solve/unsolve whole names in different contexts (saving a file to disk,
@@ -484,10 +528,10 @@ naming an instance in a dependency graph and so on).</p>
     </div>
   </div>
   <div class='clearall'></div>
-  <div class='section' id='section-29'>
+  <div class='section' id='section-33'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-29'>#</a>
+        <a class='octothorpe' href='#section-33'>#</a>
       </div>
       <p>Add a field to this profile.</p>
     </div>
@@ -496,10 +540,10 @@ naming an instance in a dependency graph and so on).</p>
     </div>
   </div>
   <div class='clearall'></div>
-  <div class='section' id='section-30'>
+  <div class='section' id='section-34'>
     <div class='docs'>
       <div class='octowrap'>
-        <a class='octothorpe' href='#section-30'>#</a>
+        <a class='octothorpe' href='#section-34'>#</a>
       </div>
       
     </div>
@@ -512,67 +556,15 @@ naming an instance in a dependency graph and so on).</p>
     </div>
   </div>
   <div class='clearall'></div>
-  <div class='section' id='section-31'>
-    <div class='docs'>
-      <div class='octowrap'>
-        <a class='octothorpe' href='#section-31'>#</a>
-      </div>
-      <p>Add fields (<code>iterable</code>) to this profile.</p>
-    </div>
-    <div class='code'>
-      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">add_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fields</span><span class="p">):</span></pre></div>
-    </div>
-  </div>
-  <div class='clearall'></div>
-  <div class='section' id='section-32'>
-    <div class='docs'>
-      <div class='octowrap'>
-        <a class='octothorpe' href='#section-32'>#</a>
-      </div>
-      
-    </div>
-    <div class='code'>
-      <div class="highlight"><pre>        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">f</span><span class="p">)</span></pre></div>
-    </div>
-  </div>
-  <div class='clearall'></div>
-  <div class='section' id='section-33'>
-    <div class='docs'>
-      <div class='octowrap'>
-        <a class='octothorpe' href='#section-33'>#</a>
-      </div>
-      <p>Solve a name based on user input and profile fields.</p>
-    </div>
-    <div class='code'>
-      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">values</span><span class="p">):</span></pre></div>
-    </div>
-  </div>
-  <div class='clearall'></div>
-  <div class='section' id='section-34'>
-    <div class='docs'>
-      <div class='octowrap'>
-        <a class='octothorpe' href='#section-34'>#</a>
-      </div>
-      
-    </div>
-    <div class='code'>
-      <div class="highlight"><pre>        <span class="n">rval</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
-            <span class="n">rval</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="o">*</span><span class="n">values</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">rval</span></pre></div>
-    </div>
-  </div>
-  <div class='clearall'></div>
   <div class='section' id='section-35'>
     <div class='docs'>
       <div class='octowrap'>
         <a class='octothorpe' href='#section-35'>#</a>
       </div>
-      <p>Return a <code>dict</code> mapping field key values.</p>
+      <p>Add fields (<code>iterable</code>) to this profile.</p>
     </div>
     <div class='code'>
-      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">unsolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span></pre></div>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">add_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fields</span><span class="p">):</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -584,11 +576,255 @@ naming an instance in a dependency graph and so on).</p>
       
     </div>
     <div class='code'>
+      <div class="highlight"><pre>        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">f</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-37'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-37'>#</a>
+      </div>
+      <p>Solve a name based on user input and profile fields.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">values</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-38'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-38'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">rval</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="n">rval</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="o">*</span><span class="n">values</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">rval</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-39'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-39'>#</a>
+      </div>
+      <p>Return a <code>dict</code> mapping field key values.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">unsolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-40'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-40'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
       <div class="highlight"><pre>        <span class="n">rval</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
         <span class="n">values</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">separator</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
             <span class="n">rval</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">unsolve</span><span class="p">(</span><span class="o">*</span><span class="n">values</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">rval</span>
+        <span class="k">return</span> <span class="n">rval</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-41'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-41'>#</a>
+      </div>
+      <h3><span id="i/o-drivers" href="i/o-drivers"> I/O Drivers </span></h3>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-42'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-42'>#</a>
+      </div>
+      <p>Drivers are in charge of managing I/O.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-43'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-43'>#</a>
+      </div>
+      <p>In memory driver, this driver does not save to disk so whatever you set is
+not session persistent (used by unit tests).</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">MemoDriver</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-44'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-44'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>  <span class="c"># update value on init</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-45'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-45'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">objs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">objs</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-46'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-46'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-47'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-47'>#</a>
+      </div>
+      <p>This driver stores to disk by encoding everything as json using python
+builtin json module.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">JSONDriver</span><span class="p">(</span><span class="n">MemoDriver</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-48'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-48'>#</a>
+      </div>
+      <p>Dump <code>objs</code> as JSON on disk.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">objs</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-49'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-49'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="nb">super</span><span class="p">(</span><span class="n">JSONDriver</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="o">**</span><span class="n">objs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">objs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s">&quot;{}.json&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">)),</span> <span class="s">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">fp</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-50'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-50'>#</a>
+      </div>
+      <p>Load and return a data <code>dict</code> from disk.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-51'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-51'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+            <span class="k">return</span>
+
+        <span class="n">rval</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+            <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&quot;.json&quot;</span><span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+                <span class="n">rval</span><span class="p">[</span><span class="n">filename</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&quot;.json&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">rval</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-52'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-52'>#</a>
+      </div>
+      <p>Return the path where naming gets serialized.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">path</span><span class="p">():</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-53'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-53'>#</a>
+      </div>
+      <p>The mechanism follows the order below:</p>
+<ol>
+<li>Look at <code>NAMING_PATH</code> environment variable.</li>
+<li>Look at <code>~/.local/share/naming.py/</code></li>
+</ol>
+<blockquote>
+<p><code>~</code> is equvalent to <code>%userprofile%</code> on Windows... yay! :)</p>
+</blockquote>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">home</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s">&quot;~&quot;</span><span class="p">)</span>
+        <span class="n">naming_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">home</span><span class="p">,</span> <span class="s">&quot;.local&quot;</span><span class="p">,</span> <span class="s">&quot;share&quot;</span><span class="p">,</span> <span class="s">&quot;naming.py&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;NAMING_PATH&quot;</span><span class="p">,</span> <span class="n">naming_path</span><span class="p">)</span>
 
 </pre></div>
     </div>
