@@ -4,15 +4,12 @@ docs: clear
 clear:
 	rm -rf ./docs/*.*
 
-gh-pages: docs
-	git commit -a
-	git checkout gh-pages
-	git merge refactor
-	git push
-	git checkout refactor
-
 httpserver: docs
 	python -m SimpleHTTPServer
 
 unittest:
+ifeq (, $(shell coverage --version 2> /dev/null))
+	clear && python -m unittest discover
+else
 	coverage erase && clear && coverage run --source "${PWD##*/}" -m unittest discover && coverage report -m
+endif
