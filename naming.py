@@ -30,6 +30,7 @@ setting configurable rules in the form of a naming convention.
 
 # == Helpers & Setup ==
 import os
+import copy
 import json
 import logging
 from collections import OrderedDict
@@ -87,28 +88,30 @@ def active_profile():
     return None
 
 
-def save(driver=None):
+def save():
     """
     Save all changes to disk in order to make them session persistent (only json
     is supported at the moment, if there's anyone wanting to add support to DB
     drivers please feels free to get in touch).
     """
-    set_driver(driver)
+    if driver() is None:
+        set_driver()
     driver().dump(PROFILES=PROFILES, FIELDS=FIELDS,
                   ACTIVE_PROFILE=ACTIVE_PROFILE)
 
 
-def load(driver=None):
+def load():
     """
     Load existing data by using a driver, you should call this function to
     reload the library or init from latest saved state.
     """
-    set_driver(driver)
+    if driver() is None:
+        set_driver()
     values = driver().load()
     globals().update(values)
 
 
-def set_driver(driver):
+def set_driver(driver=None):
     """
     Set the IO driver to driver, if None is passed it uses the existing active
     driver or init a new one based on json.
@@ -117,8 +120,9 @@ def set_driver(driver):
 
     driver = driver or DB_DRIVER
     if driver is None:
-        logging.debug("Initializing a new JSON driver")
-        DB_DRIVER = JSONDriver()
+        driver = JSONDriver()
+
+    DB_DRIVER = driver
 
 
 def driver():
@@ -153,12 +157,14 @@ class Field(object):
 
         self.name = name
         self.value = value
+        self.required = kwds.get("required", True)
 
         {str: self._initStr,
          dict: self._initDict,
          int: self._initInt}.get(type(self.value))(**kwds)
 
-        self.required = True if self.default is None else False
+        logging.debug("Init {0} of type {1}".format(
+            self, ("STR_TYPE", "DICT_TYPE", "INT_TYPE")[self._type]))
 
     def _initStr(self, **kwds):
         self._type = STR_TYPE
@@ -170,8 +176,8 @@ class Field(object):
 
     def _initInt(self, **kwds):
         self._type = INT_TYPE
-        self.default = kwds.get("default", 0)
         self.padding = kwds.get("padding", 3)
+        self.default = str(kwds.get("default", 0)).zfill(self.padding)
 
     def solve(self, *values):
         """Solve the field by returning a `set` of possible answers."""
@@ -257,13 +263,17 @@ class MemoDriver(object):
     not session persistent (used by unit tests).
     """
     def __init__(self):
+        logging.debug("Initializing {}".format(self))
+
         self.value = dict()
         self.value = self.load()  # update value on init
 
     def dump(self, **objs):
-        self.value.update(objs)
+        logging.debug("Driver saving: {}".format(objs))
+        self.value.update(copy.deepcopy(objs))
 
     def load(self):
+        logging.debug("Driver loading: {}".format(self.value))
         return self.value
 
 
@@ -305,7 +315,7 @@ class JSONDriver(MemoDriver):
         return rval
 
     @property
-    def path():
+    def path(self):
         """Return the path where naming gets serialized.
 
         The mechanism follows the order below:

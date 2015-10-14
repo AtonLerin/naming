@@ -63,6 +63,7 @@ THE SOFTWARE.</p>
     </div>
     <div class='code'>
       <div class="highlight"><pre><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
@@ -215,7 +216,7 @@ is supported at the moment, if there's anyone wanting to add support to DB
 drivers please feels free to get in touch).</p>
     </div>
     <div class='code'>
-      <div class="highlight"><pre><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="n">driver</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span></pre></div>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">save</span><span class="p">():</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -227,7 +228,8 @@ drivers please feels free to get in touch).</p>
       
     </div>
     <div class='code'>
-      <div class="highlight"><pre>    <span class="n">set_driver</span><span class="p">(</span><span class="n">driver</span><span class="p">)</span>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">driver</span><span class="p">()</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">set_driver</span><span class="p">()</span>
     <span class="n">driver</span><span class="p">()</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">PROFILES</span><span class="o">=</span><span class="n">PROFILES</span><span class="p">,</span> <span class="n">FIELDS</span><span class="o">=</span><span class="n">FIELDS</span><span class="p">,</span>
                   <span class="n">ACTIVE_PROFILE</span><span class="o">=</span><span class="n">ACTIVE_PROFILE</span><span class="p">)</span></pre></div>
     </div>
@@ -242,7 +244,7 @@ drivers please feels free to get in touch).</p>
 reload the library or init from latest saved state.</p>
     </div>
     <div class='code'>
-      <div class="highlight"><pre><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">driver</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span></pre></div>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">load</span><span class="p">():</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -254,7 +256,8 @@ reload the library or init from latest saved state.</p>
       
     </div>
     <div class='code'>
-      <div class="highlight"><pre>    <span class="n">set_driver</span><span class="p">(</span><span class="n">driver</span><span class="p">)</span>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">driver</span><span class="p">()</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">set_driver</span><span class="p">()</span>
     <span class="n">values</span> <span class="o">=</span> <span class="n">driver</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
     <span class="nb">globals</span><span class="p">()</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">values</span><span class="p">)</span></pre></div>
     </div>
@@ -269,7 +272,7 @@ reload the library or init from latest saved state.</p>
 driver or init a new one based on json.</p>
     </div>
     <div class='code'>
-      <div class="highlight"><pre><span class="k">def</span> <span class="nf">set_driver</span><span class="p">(</span><span class="n">driver</span><span class="p">):</span></pre></div>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">set_driver</span><span class="p">(</span><span class="n">driver</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -285,8 +288,9 @@ driver or init a new one based on json.</p>
 
     <span class="n">driver</span> <span class="o">=</span> <span class="n">driver</span> <span class="ow">or</span> <span class="n">DB_DRIVER</span>
     <span class="k">if</span> <span class="n">driver</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Initializing a new JSON driver&quot;</span><span class="p">)</span>
-        <span class="n">DB_DRIVER</span> <span class="o">=</span> <span class="n">JSONDriver</span><span class="p">()</span></pre></div>
+        <span class="n">driver</span> <span class="o">=</span> <span class="n">JSONDriver</span><span class="p">()</span>
+
+    <span class="n">DB_DRIVER</span> <span class="o">=</span> <span class="n">driver</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -375,12 +379,14 @@ implicitly.</p>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">required</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;required&quot;</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
 
         <span class="p">{</span><span class="nb">str</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initStr</span><span class="p">,</span>
          <span class="nb">dict</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initDict</span><span class="p">,</span>
          <span class="nb">int</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initInt</span><span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">))(</span><span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">required</span> <span class="o">=</span> <span class="bp">True</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="bp">False</span></pre></div>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Init {0} of type {1}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s">&quot;STR_TYPE&quot;</span><span class="p">,</span> <span class="s">&quot;DICT_TYPE&quot;</span><span class="p">,</span> <span class="s">&quot;INT_TYPE&quot;</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">_type</span><span class="p">]))</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -422,8 +428,8 @@ implicitly.</p>
     <div class='code'>
       <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">_initInt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_type</span> <span class="o">=</span> <span class="n">INT_TYPE</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">default</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;default&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">padding</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;padding&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span></pre></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">padding</span> <span class="o">=</span> <span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;padding&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;default&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">padding</span><span class="p">)</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -682,6 +688,8 @@ not session persistent (used by unit tests).</p>
     </div>
     <div class='code'>
       <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Initializing {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>  <span class="c"># update value on init</span></pre></div>
     </div>
@@ -696,7 +704,8 @@ not session persistent (used by unit tests).</p>
     </div>
     <div class='code'>
       <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">objs</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">objs</span><span class="p">)</span></pre></div>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Driver saving: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">objs</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">objs</span><span class="p">))</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -709,6 +718,7 @@ not session persistent (used by unit tests).</p>
     </div>
     <div class='code'>
       <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Driver loading: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span></pre></div>
     </div>
   </div>
@@ -803,7 +813,7 @@ builtin json module.</p>
     </div>
     <div class='code'>
       <div class="highlight"><pre>    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">path</span><span class="p">():</span></pre></div>
+    <span class="k">def</span> <span class="nf">path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
