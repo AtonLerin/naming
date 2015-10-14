@@ -1,13 +1,20 @@
-docs: clear
+help:
+	@echo 'Makefile for naming.py                                                 '
+	@echo '                                                                       '
+	@echo 'Usage:                                                                 '
+	@echo '   make test                test runner (uses coverage when available) '
+	@echo '   make docs                (re)generate the documentation             '
+	@echo '   make clean               remove generated docs                      '
+	@echo '   make help                show this help message                     '
+	@echo '                                                                       '
+
+docs: clean
 	pycco naming.py
 
-clear:
+clean:
 	rm -rf ./docs/*.*
 
-httpserver: docs
-	python -m SimpleHTTPServer
-
-unittest:
+test:
 ifeq (, $(shell coverage --version 2> /dev/null))
 	clear && python -m unittest discover
 else
