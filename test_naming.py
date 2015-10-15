@@ -29,7 +29,7 @@ class DriverTests(unittest.TestCase):
         self.assertEqual(d, n.driver())
 
 
-class TokenTests(unittest.TestCase):
+class FieldTests(unittest.TestCase):
 
     def setUp(self):
         n.set_driver(n.MemoDriver())  # in memory driver
@@ -61,6 +61,35 @@ class TokenTests(unittest.TestCase):
         self.assertIsInstance(f.value, int)
         self.assertEqual(f.default, "000")
         self.assertFalse(f.required)
+
+
+class ProfileTests(unittest.TestCase):
+    def setUp(self):
+        n.set_driver(n.MemoDriver())  # in memory driver
+        n.save()  # save empty state
+
+    def tearDown(self):
+        n.load()  # restore empty
+
+    def test_add(self):
+        p = n.add_profile("DG")
+        self.assertEqual(p.name, "DG")
+
+    def test_active(self):
+        self.assertIsNone(n.active_profile())
+
+        self.test_add()
+
+        p = n.active_profile()
+        self.assertIsNotNone(p)
+        self.assertEqual(p.name, "DG")
+
+        p = n.add_profile("test")
+        self.assertNotEqual(n.active_profile(), p)
+
+        p = n.add_profile("test1", active=True)
+        self.assertEqual(n.active_profile(), p)
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)  # enable logging

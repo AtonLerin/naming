@@ -140,6 +140,7 @@ THE SOFTWARE.</p>
       <div class="highlight"><pre>    <span class="n">profile</span> <span class="o">=</span> <span class="n">Profile</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">fields</span><span class="p">:</span>
         <span class="n">profile</span><span class="o">.</span><span class="n">add_field</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span>
+    <span class="n">active</span> <span class="o">=</span> <span class="bp">True</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">PROFILES</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="k">else</span> <span class="n">active</span>
     <span class="k">if</span> <span class="n">active</span><span class="p">:</span>
         <span class="n">set_active_profile</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span>
     <span class="n">PROFILES</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">profile</span>
@@ -156,7 +157,7 @@ THE SOFTWARE.</p>
 on this profile/context.</p>
     </div>
     <div class='code'>
-      <div class="highlight"><pre><span class="k">def</span> <span class="nf">set_active_profile</span><span class="p">(</span><span class="n">profile_name</span><span class="p">):</span></pre></div>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">set_active_profile</span><span class="p">(</span><span class="n">profile</span><span class="p">):</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>
@@ -170,10 +171,12 @@ on this profile/context.</p>
     <div class='code'>
       <div class="highlight"><pre>    <span class="k">global</span> <span class="n">ACTIVE_PROFILE</span>  <span class="c"># patch ACTIVE_PROFILE, KISS</span>
 
-    <span class="n">profile</span> <span class="o">=</span> <span class="n">PROFILES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">profile_name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">profile</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
+        <span class="n">profile</span> <span class="o">=</span> <span class="n">PROFILES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span>
+
     <span class="k">if</span> <span class="n">profile</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Patching active_profile as: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">profile_name</span><span class="p">))</span>
-        <span class="n">ACTIVE_PROFILE</span> <span class="o">=</span> <span class="n">profile_name</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Setting {} as active profile.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">profile</span><span class="p">))</span>
+        <span class="n">ACTIVE_PROFILE</span> <span class="o">=</span> <span class="n">profile</span>
         <span class="k">return</span> <span class="bp">True</span>
     <span class="k">return</span> <span class="bp">False</span></pre></div>
     </div>
@@ -199,10 +202,11 @@ on this profile/context.</p>
       
     </div>
     <div class='code'>
-      <div class="highlight"><pre>    <span class="n">profile</span> <span class="o">=</span> <span class="n">PROFILES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ACTIVE_PROFILE</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">ACTIVE_PROFILE</span> <span class="ow">and</span> <span class="n">profile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">profile</span>
-    <span class="k">return</span> <span class="bp">None</span></pre></div>
+      <div class="highlight"><pre>    <span class="k">global</span> <span class="n">ACTIVE_PROFILE</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ACTIVE_PROFILE</span><span class="p">,</span> <span class="n">Profile</span><span class="p">)</span> <span class="ow">or</span> \
+            <span class="n">PROFILES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ACTIVE_PROFILE</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">ACTIVE_PROFILE</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">return</span> <span class="n">ACTIVE_PROFILE</span></pre></div>
     </div>
   </div>
   <div class='clearall'></div>

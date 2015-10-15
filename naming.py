@@ -59,33 +59,37 @@ def add_profile(name, fields=None, active=False):
     profile = Profile(name)
     if fields:
         profile.add_field(fields)
+    active = True if not len(PROFILES.keys()) else active
     if active:
         set_active_profile(profile)
     PROFILES[name] = profile
     return profile
 
 
-def set_active_profile(profile_name):
+def set_active_profile(profile):
     """
     Set the active profile by name, all names will be solved under the rules set
     on this profile/context.
     """
     global ACTIVE_PROFILE  # patch ACTIVE_PROFILE, KISS
 
-    profile = PROFILES.get(profile_name)
+    if isinstance(profile, basestring):
+        profile = PROFILES.get(profile)
+
     if profile:
-        logging.debug("Patching active_profile as: {}".format(profile_name))
-        ACTIVE_PROFILE = profile_name
+        logging.debug("Setting {} as active profile.".format(profile))
+        ACTIVE_PROFILE = profile
         return True
     return False
 
 
 def active_profile():
     """Get the active profile."""
-    profile = PROFILES.get(ACTIVE_PROFILE)
-    if ACTIVE_PROFILE and profile is not None:
-        return profile
-    return None
+    global ACTIVE_PROFILE
+    if not isinstance(ACTIVE_PROFILE, Profile) or \
+            PROFILES.get(ACTIVE_PROFILE.name) is None:
+        ACTIVE_PROFILE = None
+    return ACTIVE_PROFILE
 
 
 def save():
